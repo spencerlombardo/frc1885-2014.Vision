@@ -1,10 +1,15 @@
 package edu.battlefield.vision;
 
 import java.awt.Image;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -13,30 +18,26 @@ import javax.swing.JLabel;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
-import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.highgui.Highgui;
-import org.opencv.highgui.VideoCapture;
 import org.opencv.imgproc.Imgproc;
 
 public class AerialAssist 
-{
-	private static boolean isLibLoaded = false;
-	
+{	
 	private static int MAX_KERNAL_LENGTH = 20;
-	private static Scalar mMin = new Scalar(190, 0, 0);
-	private static Scalar mMax = new Scalar(240, 200, 200);
+	private static Scalar mMin = new Scalar(0, 0, 75);
+	private static Scalar mMax = new Scalar(200, 200, 200);
+	private static double heightRatio = .60;
+	private static double widthRatio = .90;
 
 	//Grab Library
 	static {
 
 		try {
 			System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-			isLibLoaded = true;
 		} catch(UnsatisfiedLinkError e) {
 			e.printStackTrace();
 		}
@@ -44,7 +45,8 @@ public class AerialAssist
 	public static void main(String [] args)
 	{
 		//Select Temporary Image
-		File selectedFile = new File("C:/Users/spenc_000/Documents/School/Robotics/frc1885-2014.Vision/Test Images/2014SampleImage.png");
+		String defaultPath = "C:/Users/spenc_000/Documents/School/Robotics/frc1885-2014.Vision";
+		File selectedFile = new File(defaultPath + "/Test Images/2014SampleImagePartialLightUp.png");
 		
 		//Grab Image
 		Mat imread = Highgui.imread(selectedFile.getAbsolutePath());
@@ -58,7 +60,7 @@ public class AerialAssist
 		displayImg(threshImg, "Gaussian Filter");
 		
 		//Threshold Image
-		//threshChannel(newImage, newImage, 0, 150);
+		//threshChannel(threshImg, threshImg, 2, 200);
 		threshImg(threshImg, threshImg, mMin, mMax);
 		displayImg(threshImg, "Threshold");
 		
@@ -71,9 +73,14 @@ public class AerialAssist
 		for(int i = 0; i < blobs.size(); i++)
 		{
 			Core.rectangle(imread, blobs.get(i).tl(), blobs.get(i).br(), new Scalar(0, 255, 255));
+			//displayImg(imread, "Blobs" + " " + i);
 		}
 		displayImg(imread, "Blobs");
 		
+	}
+	public static float detectDepth(Mat pInput)
+	{
+		return 0.0f;
 	}
 	/**
 	 * Apply a base threshold to the Image given the minimum values for the pixels and maximum value for the pixels
@@ -148,20 +155,86 @@ public class AerialAssist
 	public static List <Rect> detectBlobs(Mat pInput, int pMaxArea)
 	{
 		List <MatOfPoint> contours = new ArrayList<MatOfPoint>();
-		Imgproc.findContours(pInput, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+		Mat hierarchy = new Mat();
+		Imgproc.findContours(pInput, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 		
 		List<Rect> boundRects = new ArrayList <Rect>();
 		
+		TreeMap<Double, MatOfPoint> orderedContour = new TreeMap<Double, MatOfPoint>();
+		
 		for(int i = 0; i < contours.size(); i++)
 		{
-			if(contours.get(i).rows() < pMaxArea)
+			double tmp = contours.get(i).size().area();
+			if(orderedContour.containsKey(tmp))
 			{
-				continue;
+				tmp += 0.01;
 			}
-			boundRects.add(Imgproc.boundingRect(contours.get(i)));
-			
+			orderedContour.put(tmp, contours.get(i));
+		}
+		if(checkRatio(orderedContour))
+		{
+			boundRects.add(Imgproc.boundingRect(getLargestContour(orderedContour)));
 		}
 		return boundRects;
+	}
+	
+	public static MatOfPoint getLargestContour(TreeMap<Double, MatOfPoint> pMap)
+	{
+		MatOfPoint tmp = new MatOfPoint();
+		int c = 0;
+		for(Entry<Double, MatOfPoint> e: pMap.entrySet())
+		{
+			if(c == pMap.size()-1)
+			{
+				tmp = e.getValue();
+			}
+			c++;
+		}
+		return tmp;
+	}
+	
+	public static boolean checkRatio(TreeMap<Double, MatOfPoint> pMap)
+	{
+		Set<Double> keys =  pMap.descendingKeySet();
+		double [] slots = new double [3];
+		
+		int c = 0;
+		for(Double key: keys)
+		{
+			switch(c)
+			{
+				case 0:			slots[c] = key;					break;
+				case 1:			slots[c] = key;					break;
+				case 2:			slots[c] = key;					break;
+			}
+			c++;
+		}
+		Rect largest = Imgproc.boundingRect(pMap.get(slots[0]));
+		Rect second = Imgproc.boundingRect(pMap.get(slots[1]));
+		Rect third = Imgproc.boundingRect(pMap.get(slots[2]));
+		
+		Rectangle largestRectangle = convertToRectangle(largest);
+		Rectangle secondRectangle = convertToRectangle(second);
+		Rectangle thirdRectangle = convertToRectangle(third);
+		
+		
+		if(!largestRectangle.contains(secondRectangle) || !largestRectangle.contains(thirdRectangle)) {
+			return false;
+		}
+		
+		double wRatio = (second.width + third.width + 0.0)/largest.width;
+		System.out.println("wRatio: " + wRatio);
+		double hRatio1 = (second.height + 0.0)/largest.height;
+		System.out.println("hRatio1: " + hRatio1);
+		double hRatio2 = (third.height + 0.0)/largest.height;
+		System.out.println("hRatio2: " + hRatio2);
+		
+		return wRatio > widthRatio && hRatio1 > heightRatio && hRatio2 > heightRatio;
+	}
+	
+	private static Rectangle convertToRectangle(Rect largest) 
+	{
+		return new Rectangle(largest.x, largest.y, largest.width, largest.height);
 	}
 	public static void displayImg(Mat pInput) {
 		displayImg(pInput, "");

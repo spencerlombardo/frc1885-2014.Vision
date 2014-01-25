@@ -196,7 +196,7 @@ public class ThreshTool {
 		
 		JFrame aFrame = new JFrame();
 		File selectedFile = 
-				new File("C:/Users/spenc_000/Documents/School/Robotics/frc1885-2014.Vision/2013SampleImage.jpg");
+				new File("C:/Users/spenc_000/Documents/School/Robotics/frc1885-2014.Vision/Test Image/2013SampleImagePartialLightUp.jpg");
 		Mat imread = Highgui.imread(selectedFile.getAbsolutePath());
 		
 		ThreshTool aTool = new ThreshTool(imread);
