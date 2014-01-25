@@ -28,8 +28,8 @@ import org.opencv.imgproc.Imgproc;
 public class AerialAssist 
 {	
 	private static int MAX_KERNAL_LENGTH = 20;
-	private static Scalar mMin = new Scalar(0, 0, 75);
-	private static Scalar mMax = new Scalar(200, 200, 200);
+	private static Scalar mMin = new Scalar(0, 0, 70);
+	private static Scalar mMax = new Scalar(240, 240, 150);
 	private static double heightRatio = .60;
 	private static double widthRatio = .90;
 
@@ -46,7 +46,7 @@ public class AerialAssist
 	{
 		//Select Temporary Image
 		String defaultPath = "C:/Users/spenc_000/Documents/School/Robotics/frc1885-2014.Vision";
-		File selectedFile = new File(defaultPath + "/Test Images/2014SampleImagePartialLightUp.png");
+		File selectedFile = new File(defaultPath + "/Test Images/SimplyRed.jpg");
 		
 		//Grab Image
 		Mat imread = Highgui.imread(selectedFile.getAbsolutePath());
@@ -73,10 +73,8 @@ public class AerialAssist
 		for(int i = 0; i < blobs.size(); i++)
 		{
 			Core.rectangle(imread, blobs.get(i).tl(), blobs.get(i).br(), new Scalar(0, 255, 255));
-			//displayImg(imread, "Blobs" + " " + i);
 		}
-		displayImg(imread, "Blobs");
-		
+		displayImg(imread, "Accepted Blobs");
 	}
 	public static float detectDepth(Mat pInput)
 	{
@@ -126,8 +124,8 @@ public class AerialAssist
 	}
 	/***
 	 *  Apply the Gaussian Filter to the Image
-	 * @param pInput
-	 * @param pOutput-
+	 * @param pInput - Input Image
+	 * @param pOutput- Output Image
 	 */
 	public static void lowFrequencyFilter(Mat pInput, Mat pOutput)
 	{
@@ -169,6 +167,7 @@ public class AerialAssist
 			{
 				tmp += 0.01;
 			}
+			boundRects.add(Imgproc.boundingRect(contours.get(i)));
 			orderedContour.put(tmp, contours.get(i));
 		}
 		if(checkRatio(orderedContour))
