@@ -27,10 +27,11 @@ public class AerialAssist
 {
 	private static boolean isLibLoaded = false;
 	
-	private static int MAX_KERNAL_LENGTH = 15;
-	private static Scalar mMin = new Scalar(0, 190, 0);
-	private static Scalar mMax = new Scalar(200, 240, 200);
+	private static int MAX_KERNAL_LENGTH = 20;
+	private static Scalar mMin = new Scalar(190, 0, 0);
+	private static Scalar mMax = new Scalar(240, 200, 200);
 
+	//Grab Library
 	static {
 
 		try {
@@ -42,62 +43,88 @@ public class AerialAssist
 	}
 	public static void main(String [] args)
 	{
-		File selectedFile = new File("C:/Users/spenc_000/Documents/School/Robotics/frc1885-2014.Vision/2013SampleImage.jpg");
+		//Select Temporary Image
+		File selectedFile = new File("C:/Users/spenc_000/Documents/School/Robotics/frc1885-2014.Vision/Test Images/2014SampleImage.png");
 		
+		//Grab Image
 		Mat imread = Highgui.imread(selectedFile.getAbsolutePath());
-		displayImg(imread);
+		displayImg(imread, "Original Image");		//Display Image
 		
-		Mat newImage = new Mat(imread.rows(), imread.cols(), CvType.CV_8UC1);
+		//Create 
+		Mat threshImg = new Mat(imread.rows(), imread.cols(), CvType.CV_8UC1);
+
+		//Apply Gaussian Filter to Image
+		lowFrequencyFilter(imread, threshImg);
+		displayImg(threshImg, "Gaussian Filter");
 		
-		lowFrequencyFilter(imread, newImage);
-		
+		//Threshold Image
 		//threshChannel(newImage, newImage, 0, 150);
-		threshImg(newImage, newImage, mMin, mMax);
+		threshImg(threshImg, threshImg, mMin, mMax);
+		displayImg(threshImg, "Threshold");
 		
+		//Detect Blobs on the Image
 		Mat tmp = new Mat();
-		newImage.copyTo(tmp);
+		threshImg.copyTo(tmp);
 		List <Rect> blobs = detectBlobs(tmp, 10);
+		
+		//Draw the Blobs on the Original Image
 		for(int i = 0; i < blobs.size(); i++)
 		{
 			Core.rectangle(imread, blobs.get(i).tl(), blobs.get(i).br(), new Scalar(0, 255, 255));
 		}
-		displayImg(imread);
+		displayImg(imread, "Blobs");
+		
 	}
+	/**
+	 * Apply a base threshold to the Image given the minimum values for the pixels and maximum value for the pixels
+	 * @param pInput - Image for the Threshold to be applied.
+	 * @param pOutput - Output Image.
+	 * @param pMin - Minimum Range for Threshold.
+	 * @param pMax - Maximum Range for Threshold.
+	 */
 	public static void threshImg(Mat pInput, Mat pOutput, Scalar pMin, Scalar pMax)
 	{
 		Core.inRange(pInput, pMin, pMax, pOutput);
 	}
-	public static void threshChannel(Mat pInput, Mat pOutput, int pChannel, int pMaxThresh)
+	/**
+	 * Applys a binary threshold to a single channel of the image, returning the binary image of that single channel
+	 * @param pInput - Image for the threshold to be applied to.
+	 * @param pOutput - Output Image.
+	 * @param pChannel - The single channel for the threshold to apply to.
+	 * @param pMinThresh - The minimum value for the threshold 
+	 */
+	public static void threshChannel(Mat pInput, Mat pOutput, int pChannel, int pMinThresh)
 	{
+		//Extract the channel to a temporary image
+		Mat grayImg = new Mat(pInput.rows(), pInput.cols(), CvType.CV_8UC1);
+		Core.extractChannel(pInput, grayImg, pChannel);
+	
+		//Apply the single channel threshold
+		Imgproc.threshold(grayImg, pOutput, pMinThresh, 255, Imgproc.THRESH_BINARY);
+	}
+	/***
+	 * Apply a Gaussian Filter to a single channel of the image.
+	 * @param pInput - Image for the filter to be applied to. 
+	 * @param pOutput - Output image
+	 * @param pChannel - Channel for the Gaussian filter to be applied to.
+	 */
+	public static void lowFrequencyFilterChannel(Mat pInput, Mat pOutput, int pChannel)
+	{
+		//Extract the Channel requested
 		Mat grayImg = new Mat(pInput.rows(), pInput.cols(), CvType.CV_8UC1);
 		Core.extractChannel(pInput, grayImg, pChannel);
 		
-		Imgproc.threshold(grayImg, pOutput, pMaxThresh, 255, Imgproc.THRESH_BINARY);
-	}
-	public static void applyThresh(Mat pInput, Mat pOutput)
-	{
-		for(int row = 0; row < pInput.height(); row++)
-		{
-			for(int col = 0; col < pInput.width(); col++)
-			{
-				double [] curPixel = pInput.get( row, col );
-				try {
-				pOutput.put(row, col, checkDiff(curPixel));
-				} catch(NullPointerException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-	public static void lowFrequencyFilterChannel(Mat pInput, Mat pOutput, int pChannel)
-	{
-		Mat grayImg = new Mat(pInput.rows(), pInput.cols(), CvType.CV_8UC1);
-		Core.extractChannel(pInput, grayImg, pChannel);
+		//Apply Filter
 		lowFrequencyFilter(grayImg, pOutput);
-		displayImg(pOutput);
 	}
+	/***
+	 *  Apply the Gaussian Filter to the Image
+	 * @param pInput
+	 * @param pOutput-
+	 */
 	public static void lowFrequencyFilter(Mat pInput, Mat pOutput)
 	{
+		//Apply the Gaussian Filter
 		for ( int i = 1; i < MAX_KERNAL_LENGTH; i = i + 2 )
 	    { 
 			Imgproc.GaussianBlur( pInput, pOutput, new Size( i, i ), 0, 0 );
