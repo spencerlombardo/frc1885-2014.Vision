@@ -4,14 +4,18 @@
 using namespace cv;
 using namespace std;
 
+Mat loadImage(char * pImageName)
+{
+	return imread(imageName, 1);
+}
+
 int main(int argc, char ** argv)
 {
-	cout<<"BOB"<<endl;
 	char * imageName = argv[1];
 	cout<<"Image Name: "<<imageName<<endl<<" args: "<<argc<<endl;;
 
 	Mat image;
-	image = imread(imageName, 1);
+	image = loadImage(imageName);
 
 	if(!image.data)
 	{
