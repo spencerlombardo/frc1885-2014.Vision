@@ -29,9 +29,6 @@ import org.opencv.core.Mat;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
-import edu.battlefield.vision.AerialAssist;
-import edu.battlefield.vision.ThreshTool;
-
 public class ThreshTool {
 	
 	static {

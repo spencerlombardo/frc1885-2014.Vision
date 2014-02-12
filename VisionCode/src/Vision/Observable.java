@@ -1,6 +1,6 @@
 package Vision;
 
-import edu.battlefield.vision.FrameListener;
+import Vision.FrameListener;
 
 public interface Observable 
 {

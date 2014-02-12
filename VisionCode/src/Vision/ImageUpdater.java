@@ -1,13 +1,10 @@
 package Vision;
 
+import ilite.util.lang.Delegator;
+
 import java.awt.image.BufferedImage;
 
-import edu.battlefield.vision.AbstractNotifier;
-import edu.battlefield.vision.AerialAssist;
-import edu.battlefield.vision.FrameListener;
-import edu.battlefield.vision.VideoFrame;
-
-public class ImageUpdater extends AbstractNotifier implements FrameListener
+public class ImageUpdater extends Delegator<BufferedImage> implements FrameListener
 {
 	public ImageUpdater()
 	{
@@ -20,7 +17,8 @@ public class ImageUpdater extends AbstractNotifier implements FrameListener
 		
 		//Anything else you want done
 		
-		//Update the image
+		//Notify subscribers
+    update(tmp);
 		
 		
 	}

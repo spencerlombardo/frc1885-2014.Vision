@@ -32,19 +32,10 @@ import org.opencv.imgproc.Imgproc;
 
 public class AerialAssist 
 {	
-	private static int MAX_KERNAL_LENGTH = 5;
+	private static int MAX_KERNAL_LENGTH = 10;
 	
 	private static double heightRatio = .55;
 	private static double widthRatio = .75;
-	//Blue Thresholds
-	private static Scalar mMinB = new Scalar(90, 0, 0);
-	private static Scalar mMaxB = new Scalar(240, 240, 240);
-	//Red Thresholds
-	private static Scalar mMinR = new Scalar(0, 0, 70);
-	private static Scalar mMaxR = new Scalar(240, 240, 240);
-	
-	private static double topOfTarget = 0.75;
-	private static double cameraHeight = 0.25;
 	
 	public static void loadLib() {
 		
@@ -97,10 +88,9 @@ public class AerialAssist
 		long convertYUV = 0;
 		long zerolight = 0;
 		long convertBGR = 0;
-		long gaussian = 0;
-		long threshold = 0;
-		long detectblob = 0;
+		
 		System.out.println("Start Time: " + start_time);
+		
 		for(int c = 0; c < 5; c++)
 		{
 			start_time = System.currentTimeMillis();
@@ -118,23 +108,54 @@ public class AerialAssist
 			convertYUV = System.currentTimeMillis();
 
 			//Zero Out the light Space, Y
-			cancelLight(yuv, yuv);
+			zeroOutChannel(yuv, yuv, 0);
 			zerolight = System.currentTimeMillis();
-
 			//Convert Back to BGR Space
 			Imgproc.cvtColor(yuv, imread, Imgproc.COLOR_YCrCb2BGR);
 			convertBGR = System.currentTimeMillis();
-			displayImg(imread, "No Light");
+			displayImg(imread, "NO Light BGR");
 
+			
+			Mat blah = new Mat();
+			imread.copyTo(blah);
+			
+			zeroOutChannel(blah, blah, 2);
+			displayImg(blah, "BLAH");
+			
+			//Zero out Blue
 			zeroOutChannel(imread, imread, 0);
-			displayImg(imread, "No Blue");
-			zeroOutChannel(imread, imread, 1);
-			displayImg(imread, "No Green");
+			displayImg(imread, "IMREAD");
+//			zeroOutChannel(imread, imread, 1);
+//			displayImg(imread, "NO GREEN");
+			
 			
 			Mat lines = new Mat();
 			
-			detectBlobs(imread, lines, 1, 75, 1, Math.PI/180);
-			displayImg(lines, "BLAHLBAHLBAH");
+			Mat thresh = new Mat();
+			
+			
+		
+			threshImg(imread, thresh, new Scalar(50,50,150), new Scalar(255,255,255));
+			for(int row = 0; row < thresh.rows(); row++)
+			{
+				for(int col = 0; col < thresh.cols(); col++)
+				{
+					double [] tmp = thresh.get(row, col);
+					if(tmp[0] == 255)
+					{
+						double [] tmp1 = {0.0, 0.0, 0.0};
+						imread.put(row, col, tmp1);
+					}						
+				}
+			}
+			displayImg(thresh, "Threshold");
+			displayImg(imread, "1st Pass");
+			
+			Mat lines2 = new Mat();
+			cannyAndHough(imread, lines, 1, 75, 1, Math.PI/180);
+			cannyAndHough(blah, lines2, 1, 75, 1, Math.PI/180);
+			displayImg(lines2, "Canny and ohugh2");
+			displayImg(lines, "canny and ohugh");
 			
 //			//Create 
 //			Mat threshImg = new Mat(imread.rows(), imread.cols(), CvType.CV_8UC1);
@@ -172,57 +193,15 @@ public class AerialAssist
 			System.out.println("Grabbing Image: " + (grabImage - start_time));
 			System.out.println("Convert to YUV: " + (convertYUV - grabImage));
 			System.out.println("Zero out Light: " + (zerolight - convertYUV));
-			System.out.println("Convert to BGR: " + (convertBGR - zerolight));
-			System.out.println("Gaussian Blur: " + (gaussian - convertBGR));
-			System.out.println("Threshold: " + (threshold - gaussian));
-			System.out.println("Detect Blobs: " + (detectblob - threshold));
-			
+			System.out.println("Convert to BGR: " + (convertBGR - zerolight));			
 		}
 
 	}
-	public static double distance(Mat pInput, List<Rect> blobs)
+	public static double distance(Mat pInput, double [] pMidpoints)
 	{
-		//Get the largest Rect, assumed to be correct one
-		Rect largest = blobs.get(0);
-		if(blobs.size() > 1)
-		{
-			for(int i = 0; i < blobs.size(); i++)
-			{
-				if(blobs.get(i).size().area() > largest.size().area())
-				{
-					largest = blobs.get(i);
-				}
-			}
-		}
-		
-		Rectangle tmp = convertToRectangle(largest);
-		
-		Point center = new Point(tmp.getCenterX(), tmp.getCenterY());
-		
-		ArrayList <Double> ans = new ArrayList<Double>();
-		
 		double thetaX = 0.0;
 		
 		return thetaX;
-	}
-	public static void cancelLight(Mat pInput, Mat pOutput)
-	{
-		//Create Channels
-		ArrayList<Mat> channels = new ArrayList<Mat>();
-		channels.add(new Mat());
-		channels.add(new Mat());
-		channels.add(new Mat());
-		
-		//Extract channels
-		Core.extractChannel(pInput, channels.get(0), 0);
-		Core.extractChannel(pInput, channels.get(1), 1);
-		Core.extractChannel(pInput, channels.get(2), 2);
-		
-		//Change y to 0
-		channels.set(0, Mat.zeros(channels.get(0).rows(), channels.get(0).cols(), channels.get(0).depth()));
-		
-		//Merge the channels into the output Matrix
-		Core.merge(channels, pOutput);
 	}
 	public static void zeroOutChannel(Mat pInput, Mat pOutput, int coi)
 	{
@@ -238,8 +217,9 @@ public class AerialAssist
 		Core.extractChannel(pInput, channels.get(2), 2);
 				
 		//Change y to 0
-		channels.set(coi, Mat.zeros(channels.get(0).rows(), channels.get(0).cols(), channels.get(0).depth()));
-				
+		channels.set(coi, Mat.zeros(channels.get(coi).rows(), channels.get(coi).cols(), channels.get(coi).depth()));
+		
+		
 		//Merge the channels into the output Matrix
 		Core.merge(channels, pOutput);
 	}
@@ -298,23 +278,11 @@ public class AerialAssist
 			Imgproc.GaussianBlur( pInput, pOutput, new Size( i, i ), 0, 0 );
 		}	
 	}
-	private static double [] checkDiff(double [] pInput)
-	{
-		double[] ans = pInput;
-		double min = 100;
-		double max = 200;
-		if(min < pInput[2] || max > pInput[2])
-		{
-			ans[2] = 0;
-		}
-		return ans;
-	}	
-	public static void detectBlobs(Mat pInput, Mat pOutput, int pLowThresh, int pHighThresh, double pRho, double pTheta)
+	public static void cannyAndHough(Mat pInput, Mat pOutput, int pLowThresh, int pHighThresh, double pRho, double pTheta)
 	{
 		Imgproc.Canny(pInput, pInput, pLowThresh, pHighThresh);
 		Imgproc.cvtColor(pInput, pOutput, Imgproc.COLOR_GRAY2BGR);
 		Mat lines = new Mat();
-		displayImg(pInput, "Canny");
 		Imgproc.HoughLinesP(pInput, lines, pRho, pTheta, 30);
 		ArrayList<Double> yVals = new ArrayList<Double>();
 		
@@ -322,6 +290,14 @@ public class AerialAssist
 		
 		sortArray(yVals);
 		
+		changeIndices(yVals);
+		
+		double midpoint = averageValues(yVals);
+		Core.line(pOutput, new Point(0, pInput.height()/2), new Point(320, pInput.height()/2), new Scalar(0, 255, 0));
+		Core.line(pOutput, new Point(0, midpoint), new Point(320, midpoint), new Scalar(255, 0, 255), 2);
+	}
+	private static void changeIndices(ArrayList<Double> yVals) 
+	{
 		int [] tmp = findIndices(yVals);
 
 		for(int i = 0; i < yVals.size(); i++)
@@ -335,12 +311,6 @@ public class AerialAssist
 				yVals.set(i, yVals.get(tmp[1]));
 			}
 		}
-		double midpoint = averageValues(yVals);
-		System.out.println("Midpoint is: " + midpoint);
-		Core.line(pOutput, new Point(0, pInput.height()/2), new Point(200, pInput.height()/2), new Scalar(0, 255, 0));
-		Core.line(pOutput, new Point(0, midpoint), new Point(200, midpoint), new Scalar(255, 0, 255), 2);
-		
-		
 	}
 	private static double averageValues(ArrayList<Double> yVals) {
 		double ave = 0.0;
@@ -373,19 +343,20 @@ public class AerialAssist
 			double [] tmp = lines.get(0, i);
 			
 			//Error Checking
-			if(Math.abs((double)((tmp[3] - tmp[1])/(tmp[2]- tmp[0]))) > .5 || tmp[1] > pInput.height()-75)
-			{
-				continue;
-			}
+//			if(Math.abs((double)((tmp[3] - tmp[1])/(tmp[2]- tmp[0]))) > .5 || tmp[1] > pInput.height()-75)
+//			{
+//				continue;
+//			}
 			
 			yVals.add((tmp[3] + tmp[1])/2);
 			
-			Core.line(pOutput, new Point(tmp[0], tmp[1]), new Point(tmp[2], tmp[3]), new Scalar(0, 0, 255), 2);
+			Core.line(pOutput, new Point(tmp[0], tmp[1]), new Point(tmp[2], tmp[3]), new Scalar(0, 255, 0), 3);
 		}
 	}
 	private static int [] findIndices(ArrayList<Double> xVals) 
 	{
 		int [] ans = new int [2];
+		
 		for(int i = 0; i < xVals.size(); i++)
 		{
 			double begin = xVals.get(i);
@@ -504,9 +475,9 @@ public class AerialAssist
 		aveHeight /= rects.size();
 
 		double wRatio = sumWidth/largest.getWidth();
-		System.out.println("wRatio: " + wRatio);
+		//System.out.println("wRatio: " + wRatio);
 		double hRatio = aveHeight/largest.getHeight();
-		System.out.println("hRation: " + hRatio);
+		//System.out.println("hRation: " + hRatio);
 
 		return wRatio > widthRatio && hRatio > heightRatio;
 	}

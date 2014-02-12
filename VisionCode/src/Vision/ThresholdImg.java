@@ -3,11 +3,6 @@ package Vision;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 
-import edu.battlefield.vision.AbstractNotifier;
-import edu.battlefield.vision.AerialAssist;
-import edu.battlefield.vision.FrameListener;
-import edu.battlefield.vision.VideoFrame;
-
 public class ThresholdImg extends AbstractNotifier implements FrameListener
 {
 	//Blue Thresholds
@@ -31,7 +26,8 @@ public class ThresholdImg extends AbstractNotifier implements FrameListener
 	public void applyThreshold(Mat pInput)
 	{
 		AerialAssist.threshImg(pInput, pInput, mMin, mMax);
-	
+		AerialAssist.displayImg(pInput, "Thresh");
+		
 		notifyListeners(new VideoFrame(pInput, System.currentTimeMillis()));
 	}
 	

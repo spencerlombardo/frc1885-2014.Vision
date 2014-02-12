@@ -9,8 +9,6 @@ import java.net.URL;
 
 import javax.imageio.ImageIO;
 
-import edu.battlefield.vision.Base64Encoder;
-
 public class ImageNetworkConnection {
 	private static final String user = "root";
 	private static final String passwd = "team1885";
@@ -35,15 +33,6 @@ public class ImageNetworkConnection {
 			httpIn = new BufferedInputStream(conn.getInputStream(), 8192);
 
 			BufferedImage read = ImageIO.read(httpIn);
-
-
-			if(grabImage) {
-				grabImage = false;
-				String home = System.getProperty("user.home");
-				File outputfile = new File(home + "/Desktop/chris.jpg");
-				ImageIO.write(read, "jpg", outputfile);
-
-			}
 			return read;
 		} finally {
 

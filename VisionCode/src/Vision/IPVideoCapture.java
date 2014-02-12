@@ -6,13 +6,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
-
-import edu.battlefield.vision.AbstractNotifier;
-import edu.battlefield.vision.AerialAssist;
-import edu.battlefield.vision.FrameReader;
-import edu.battlefield.vision.VideoFrame;
 
 public class IPVideoCapture extends AbstractNotifier
 {
@@ -33,7 +27,7 @@ public class IPVideoCapture extends AbstractNotifier
 	public IPVideoCapture()
 	{
 		super();
-		mFPS = 20;
+		mFPS = 30;
 		mCameraIndex= 0;
 		
 		try 

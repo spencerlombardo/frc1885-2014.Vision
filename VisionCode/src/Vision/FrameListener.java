@@ -1,6 +1,6 @@
 package Vision;
 
-import edu.battlefield.vision.VideoFrame;
+import Vision.VideoFrame;
 
 public interface FrameListener 
 {

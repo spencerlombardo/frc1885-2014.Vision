@@ -3,11 +3,6 @@ package Vision;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
-import edu.battlefield.vision.AbstractNotifier;
-import edu.battlefield.vision.AerialAssist;
-import edu.battlefield.vision.FrameListener;
-import edu.battlefield.vision.VideoFrame;
-
 public class LightCancellization extends AbstractNotifier implements FrameListener
 {
 	
@@ -23,7 +18,7 @@ public class LightCancellization extends AbstractNotifier implements FrameListen
 		Imgproc.cvtColor(pInput, yuv, Imgproc.COLOR_BGR2YCrCb);
 		
 		//Zero Out the light Space, Y
-		AerialAssist.cancelLight(yuv, yuv);
+		AerialAssist.zeroOutChannel(yuv, yuv, 0);
 		
 		//Convert Back to BGR Space
 		Imgproc.cvtColor(yuv, pInput, Imgproc.COLOR_YCrCb2BGR);

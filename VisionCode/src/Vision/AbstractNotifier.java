@@ -3,9 +3,9 @@ package Vision;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.battlefield.vision.FrameListener;
-import edu.battlefield.vision.Observable;
-import edu.battlefield.vision.VideoFrame;
+import Vision.FrameListener;
+import Vision.Observable;
+import Vision.VideoFrame;
 
 public abstract class AbstractNotifier implements Observable
 {

@@ -7,13 +7,8 @@ import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 
-import edu.battlefield.vision.AbstractNotifier;
-import edu.battlefield.vision.AerialAssist;
-import edu.battlefield.vision.FrameListener;
-import edu.battlefield.vision.VideoFrame;
-
 public class DetectAuto extends AbstractNotifier implements FrameListener
-{
+{	
 	public DetectAuto()
 	{
 		super();
