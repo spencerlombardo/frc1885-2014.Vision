@@ -32,7 +32,7 @@ import org.opencv.imgproc.Imgproc;
 
 public class AerialAssist 
 {	
-	private static int MAX_KERNAL_LENGTH = 10;
+	private static int MAX_KERNAL_LENGTH = 4;
 	
 	private static double heightRatio = .55;
 	private static double widthRatio = .75;
@@ -102,60 +102,81 @@ public class AerialAssist
 
 
 
-			//Switch to YUV Space
+//			//Switch to YUV Space
 			Mat yuv = new Mat();
 			Imgproc.cvtColor(imread, yuv, Imgproc.COLOR_BGR2YCrCb);
 			convertYUV = System.currentTimeMillis();
-
-			//Zero Out the light Space, Y
+//			
+//			//Zero Out the light Space, Y
 			zeroOutChannel(yuv, yuv, 0);
 			zerolight = System.currentTimeMillis();
 			//Convert Back to BGR Space
 			Imgproc.cvtColor(yuv, imread, Imgproc.COLOR_YCrCb2BGR);
 			convertBGR = System.currentTimeMillis();
 			displayImg(imread, "NO Light BGR");
-
 			
-			Mat blah = new Mat();
-			imread.copyTo(blah);
+			//Convert Back to BGR Space
+			Imgproc.cvtColor(yuv, imread, Imgproc.COLOR_YCrCb2BGR);
+			convertBGR = System.currentTimeMillis();
+			displayImg(imread, "NO Light BGR");
 			
-			zeroOutChannel(blah, blah, 2);
-			displayImg(blah, "BLAH");
-			
-			//Zero out Blue
-			zeroOutChannel(imread, imread, 0);
-			displayImg(imread, "IMREAD");
-//			zeroOutChannel(imread, imread, 1);
-//			displayImg(imread, "NO GREEN");
+			lowFrequencyFilter(imread, imread);
+			//displayImg(threshImg, "Gaussian Filter");
 			
 			
 			Mat lines = new Mat();
-			
+		
 			Mat thresh = new Mat();
 			
 			
-		
-			threshImg(imread, thresh, new Scalar(50,50,150), new Scalar(255,255,255));
-			for(int row = 0; row < thresh.rows(); row++)
-			{
-				for(int col = 0; col < thresh.cols(); col++)
-				{
-					double [] tmp = thresh.get(row, col);
-					if(tmp[0] == 255)
-					{
-						double [] tmp1 = {0.0, 0.0, 0.0};
-						imread.put(row, col, tmp1);
-					}						
-				}
-			}
+			threshImg(imread, thresh, new Scalar( 0, 0, 50), new Scalar(255, 255, 255));
 			displayImg(thresh, "Threshold");
-			displayImg(imread, "1st Pass");
 			
-			Mat lines2 = new Mat();
-			cannyAndHough(imread, lines, 1, 75, 1, Math.PI/180);
-			cannyAndHough(blah, lines2, 1, 75, 1, Math.PI/180);
-			displayImg(lines2, "Canny and ohugh2");
+			cannyAndHough(thresh, lines, 1, 75, 1, Math.PI/180);
 			displayImg(lines, "canny and ohugh");
+			
+			
+//			ArrayList<Mat> hsvPlanes = new ArrayList<Mat>();
+//			
+//			Mat tmpMat = imread.clone();
+//			Mat tmpMat1 = new Mat();
+//			
+//			Imgproc.cvtColor(tmpMat, tmpMat1, Imgproc.COLOR_BGR2HSV);
+//			Core.split(tmpMat1, hsvPlanes);
+//			
+//			Mat t = thresholdColor(hsvPlanes.get(0), 174, 180);
+//			displayImg(t, "Thresholded");
+//			
+//			Mat b = morph(t);
+//			displayImg(b, "Morph");
+//			
+//			Mat lines = new Mat();
+//			
+//			cannyAndHough(b, lines, 1, 75, 1, Math.PI/180);
+//			displayImg(lines, "canny and ohugh");
+//			
+//			//Zero Out the light Space, Y
+//			zeroOutChannel(yuv, yuv, 0);
+//			zerolight = System.currentTimeMillis();
+//			//Convert Back to BGR Space
+//			Imgproc.cvtColor(yuv, imread, Imgproc.COLOR_YCrCb2BGR);
+//			convertBGR = System.currentTimeMillis();
+//			displayImg(imread, "NO Light BGR");
+			
+//			lowFrequencyFilter(imread, imread);
+//			//displayImg(threshImg, "Gaussian Filter");
+			
+//			
+//			Mat lines = new Mat();
+//			
+//			Mat thresh = new Mat();
+//			
+//			
+//			threshImg(imread, thresh, new Scalar( 0, 0, 50), new Scalar(255, 255, 255));
+//			displayImg(thresh, "Threshold");
+//			
+//			cannyAndHough(thresh, lines, 1, 75, 1, Math.PI/180);
+//			displayImg(lines, "canny and ohugh");
 			
 //			//Create 
 //			Mat threshImg = new Mat(imread.rows(), imread.cols(), CvType.CV_8UC1);
@@ -197,11 +218,41 @@ public class AerialAssist
 		}
 
 	}
-	public static double distance(Mat pInput, double [] pMidpoints)
+	public static Mat morph(Mat pMat)
 	{
-		double thetaX = 0.0;
+		int mErosionSize = 2;
+		Mat mElement = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(2*mErosionSize + 1, 2*mErosionSize +1), new Point(mErosionSize, mErosionSize));
 		
-		return thetaX;
+		Mat tmp3 = pMat.clone();
+		Mat tmp2 = new Mat();
+		
+		Imgproc.erode(tmp3, tmp2, mElement);
+		Imgproc.dilate(tmp2, tmp3, mElement);
+		
+		for(int i = 0; i < 500; i++)
+		{
+			Imgproc.erode(tmp3, tmp2, mElement);
+			Imgproc.dilate(tmp2, tmp3, mElement);
+		}
+		return tmp3;
+	}
+	private static Mat thresholdColor(final Mat aChannel, final int aLow, final int aHigh)
+	{
+		Mat tTemp1 = new Mat();
+		Mat tTemp2 = new Mat();
+		// BLUE
+		if (aLow < aHigh)
+		{
+			Imgproc.threshold(aChannel, tTemp1, aHigh, 256, Imgproc.THRESH_TOZERO_INV);
+			Imgproc.threshold(tTemp1, tTemp2, aLow, 256, Imgproc.THRESH_BINARY);
+		}
+		else
+		{
+			Mat A = thresholdColor(aChannel,0,aHigh);
+			Mat B = thresholdColor(aChannel,aLow,180);
+			Core.add(A, B, tTemp2);
+		}
+		return tTemp2;
 	}
 	public static void zeroOutChannel(Mat pInput, Mat pOutput, int coi)
 	{
