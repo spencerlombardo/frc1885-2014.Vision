@@ -14,9 +14,8 @@ public class DistanceDetector extends AbstractNotifier implements FrameListener
 	
 	public void detectDistance(Mat pInput, List<Rect> pBlobs)
 	{
-		double distance = AerialAssist.distance(pInput, pBlobs);
 		
-		notifyListeners(new VideoFrame(pInput, System.currentTimeMillis(), distance, pBlobs));
+		notifyListeners(new VideoFrame(pInput, System.currentTimeMillis(), pBlobs));
 	}
 
 	@Override

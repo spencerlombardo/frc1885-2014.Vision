@@ -29,6 +29,7 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.imgproc.Moments;
 
 public class AerialAssist 
 {	
@@ -75,7 +76,7 @@ public class AerialAssist
 	{
 		//Select Temporary Image
 		String defaultPath = "C:/Users/spenc_000/Documents/School/Robotics/frc1885-2014.Vision";
-		File selectedFile = new File(defaultPath + "/Test Images/IPCameraSample.png");
+		File selectedFile = new File(defaultPath + "/Test Images/2014SampleImagePartialLightUp.png");
 
 		//Set up the camera
 		//First parameter is the Web Server Address
@@ -102,58 +103,29 @@ public class AerialAssist
 
 
 
-//			//Switch to YUV Space
+			//Switch to YUV Space
 			Mat yuv = new Mat();
 			Imgproc.cvtColor(imread, yuv, Imgproc.COLOR_BGR2YCrCb);
 			convertYUV = System.currentTimeMillis();
-//			
-//			//Zero Out the light Space, Y
-			zeroOutChannel(yuv, yuv, 0);
-			zerolight = System.currentTimeMillis();
-			//Convert Back to BGR Space
-			Imgproc.cvtColor(yuv, imread, Imgproc.COLOR_YCrCb2BGR);
-			convertBGR = System.currentTimeMillis();
-			displayImg(imread, "NO Light BGR");
 			
-			//Convert Back to BGR Space
-			Imgproc.cvtColor(yuv, imread, Imgproc.COLOR_YCrCb2BGR);
-			convertBGR = System.currentTimeMillis();
-			displayImg(imread, "NO Light BGR");
+			ArrayList<Mat> hsvPlanes = new ArrayList<Mat>();
 			
-			lowFrequencyFilter(imread, imread);
-			//displayImg(threshImg, "Gaussian Filter");
+			Mat tmpMat = imread.clone();
+			Mat tmpMat1 = new Mat();
 			
+			Imgproc.cvtColor(tmpMat, tmpMat1, Imgproc.COLOR_BGR2HSV);
+			Core.split(tmpMat1, hsvPlanes);
+			
+			Mat t = thresholdColor(hsvPlanes.get(0), 174, 180);
+			displayImg(t, "Thresholded");
+			
+			Mat b = morph(t);
+			displayImg(b, "Morph");
 			
 			Mat lines = new Mat();
-		
-			Mat thresh = new Mat();
 			
-			
-			threshImg(imread, thresh, new Scalar( 0, 0, 50), new Scalar(255, 255, 255));
-			displayImg(thresh, "Threshold");
-			
-			cannyAndHough(thresh, lines, 1, 75, 1, Math.PI/180);
+			cannyAndHough(b, lines, 1, 75, 1, Math.PI/180);
 			displayImg(lines, "canny and ohugh");
-			
-			
-//			ArrayList<Mat> hsvPlanes = new ArrayList<Mat>();
-//			
-//			Mat tmpMat = imread.clone();
-//			Mat tmpMat1 = new Mat();
-//			
-//			Imgproc.cvtColor(tmpMat, tmpMat1, Imgproc.COLOR_BGR2HSV);
-//			Core.split(tmpMat1, hsvPlanes);
-//			
-//			Mat t = thresholdColor(hsvPlanes.get(0), 174, 180);
-//			displayImg(t, "Thresholded");
-//			
-//			Mat b = morph(t);
-//			displayImg(b, "Morph");
-//			
-//			Mat lines = new Mat();
-//			
-//			cannyAndHough(b, lines, 1, 75, 1, Math.PI/180);
-//			displayImg(lines, "canny and ohugh");
 //			
 //			//Zero Out the light Space, Y
 //			zeroOutChannel(yuv, yuv, 0);
@@ -336,15 +308,21 @@ public class AerialAssist
 		Mat lines = new Mat();
 		Imgproc.HoughLinesP(pInput, lines, pRho, pTheta, 30);
 		ArrayList<Double> yVals = new ArrayList<Double>();
+		displayImg(pInput, "Canny");
 		
-		drawLines(pInput, pOutput, lines, yVals);
+		List<Point> points = new ArrayList<Point>();
+		drawLines(pInput, pOutput, lines, yVals, points);
+		
+		for(int i = 0; i < points.size(); i++)
+		{
+			Core.circle(pOutput, points.get(i), 2, new Scalar(255, 0, 255), -1, 8, 0);
+		}
 		
 		sortArray(yVals);
 		
 		changeIndices(yVals);
 		
 		double midpoint = averageValues(yVals);
-		Core.line(pOutput, new Point(0, pInput.height()/2), new Point(320, pInput.height()/2), new Scalar(0, 255, 0));
 		Core.line(pOutput, new Point(0, midpoint), new Point(320, midpoint), new Scalar(255, 0, 255), 2);
 	}
 	private static void changeIndices(ArrayList<Double> yVals) 
@@ -387,21 +365,46 @@ public class AerialAssist
 			}
 		}
 	}
-	private static void drawLines(Mat pInput, Mat pOutput, Mat lines, ArrayList<Double> yVals) 
+	private static void drawLines(Mat pInput, Mat pOutput, Mat lines, ArrayList<Double> yVals,  List<Point> pPoints) 
 	{
+		moments(pInput, pOutput, pPoints);
 		for(int i = 0; i < lines.size().area(); i++)
 		{
 			double [] tmp = lines.get(0, i);
 			
 			//Error Checking
-//			if(Math.abs((double)((tmp[3] - tmp[1])/(tmp[2]- tmp[0]))) > .5 || tmp[1] > pInput.height()-75)
-//			{
-//				continue;
-//			}
+			if(Math.abs((double)((tmp[3] - tmp[1])/(tmp[2]- tmp[0]))) > .5 || tmp[1] > pInput.height()-75)
+			{
+				continue;
+			}
 			
+			pPoints.add(new Point(tmp[0], tmp[1]));
+			pPoints.add(new Point(tmp[2], tmp[3]));
+			pPoints.add(new Point(tmp[2] - tmp[0], tmp[3] - tmp[1]));
+
 			yVals.add((tmp[3] + tmp[1])/2);
 			
-			Core.line(pOutput, new Point(tmp[0], tmp[1]), new Point(tmp[2], tmp[3]), new Scalar(0, 255, 0), 3);
+			Core.line(pOutput, new Point(tmp[0], tmp[1]), new Point(tmp[2], tmp[3]), new Scalar(0, 255, 0), 2);
+		}
+	}
+	private static void moments(Mat pInput, Mat pOutput, List<Point> pCenterPoints) {
+		List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+		Mat hierarchy = new Mat();
+		Imgproc.findContours(pInput, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+		
+		List<Moments> mu = new ArrayList<Moments>();
+		for(int i = 0; i < contours.size(); i++)
+		{
+			mu.add(Imgproc.moments(contours.get(i), true));
+		}		for(int i = 0; i < contours.size(); i++)
+		{
+			pCenterPoints.add(new Point(mu.get(i).get_m10()/mu.get(i).get_m00(), mu.get(i).get_m01()/mu.get(i).get_m00()));
+		}
+		
+		for(int i = 0; i < contours.size(); i++)
+		{
+			Scalar color = new Scalar(0, 255, 255);
+			Imgproc.drawContours(pOutput, contours, i, color);
 		}
 	}
 	private static int [] findIndices(ArrayList<Double> xVals) 

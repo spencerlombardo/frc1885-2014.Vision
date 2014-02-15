@@ -27,7 +27,7 @@ public class IPVideoCapture extends AbstractNotifier
 	public IPVideoCapture()
 	{
 		super();
-		mFPS = 30;
+		mFPS = 20;
 		mCameraIndex= 0;
 		
 		try 

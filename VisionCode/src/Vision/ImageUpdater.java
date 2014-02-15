@@ -27,5 +27,4 @@ public class ImageUpdater extends Delegator<BufferedImage> implements FrameListe
 	{
 		updateFrame(pVideoFrame);
 	}
-	
 }
