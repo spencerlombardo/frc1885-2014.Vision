@@ -12,28 +12,31 @@ public class VisionMain
 {
 	private ImageUpdater updater;
 	
+	
 	public VisionMain()
 	{
 		updater = new ImageUpdater();
-		
 	}
 	private void setupApplication()
 	{
-		IPVideoCapture capture = new IPVideoCapture();
+		System.out.println("Happy");
+		IPVideoCapture capture = new IPVideoCapture("10.18.85.21");
+		ThresholdImg thresh = new ThresholdImg(169, 179);
+		Morphology morphImg = new Morphology();
+		ApplyCanny canny = new ApplyCanny(1, 75, 1, Math.PI/180);
+		DistanceDetector distance = new DistanceDetector();
+		printStuffs p = new printStuffs();
 		
-		LightCancellization light = new LightCancellization();
-		GaussianFilter blur = new GaussianFilter();
-		//ThresholdImg thresh = new ThresholdImg(new Scalar(0, 0, 0), new Scalar(240, 240, 240));
-		DetectAuto autonomous = new DetectAuto();
-		ApplyCanny can = new ApplyCanny(1, 75, 1, Math.PI/180);
+		capture.add(updater);
+		capture.add(thresh);
 		
-		capture.add(light);
-		light.add(blur);
-		light.add(can);
-		//blur.add(thresh);
-		//thresh.add(autonomous);
-		autonomous.add(updater);
+		thresh.add(morphImg);
 		
+		morphImg.add(canny);
+		
+		canny.add(distance);
+		
+		distance.add(p);
 		
 		try 
 		{

@@ -16,7 +16,7 @@ public class CancelColor extends AbstractNotifier implements FrameListener
 	
 	public void onlyOneColor(Mat pInput)
 	{
-		AerialAssist.zeroOutChannel(pInput, pInput, 0);
+		ImageProcessing.zeroOutChannel(pInput, pInput, 0);
 		
 		ArrayList<Mat> channels = new ArrayList<Mat>();
 		channels.add(new Mat());

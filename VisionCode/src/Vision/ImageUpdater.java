@@ -13,7 +13,7 @@ public class ImageUpdater extends Delegator<BufferedImage> implements FrameListe
 	public void updateFrame(VideoFrame pInput)
 	{
 		//Convert to Buffered Image
-		BufferedImage tmp = (BufferedImage) AerialAssist.toBufferedImage(pInput.getMat());
+		BufferedImage tmp = (BufferedImage) ImageProcessing.toBufferedImage(pInput.getMat());
 		
 		//Anything else you want done
 		

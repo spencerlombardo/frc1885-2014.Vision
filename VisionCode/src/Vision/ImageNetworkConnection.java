@@ -17,21 +17,22 @@ public class ImageNetworkConnection {
 	private BufferedInputStream httpIn;
 
 	private boolean grabImage = true;
+	
+	HttpURLConnection conn = null;
 
 	public ImageNetworkConnection(String pURL) throws IOException {
 
 		mUrl = new URL(pURL);
+		
+		conn = (HttpURLConnection)mUrl.openConnection();
+		conn.setRequestProperty("Authorization", "Basic " + base64.encode(user + ":" + passwd));
+
+		httpIn = new BufferedInputStream(conn.getInputStream());
 
 	}
 
 	public BufferedImage grabImage() throws IOException {
-		HttpURLConnection conn = null;
-		BufferedInputStream httpIn = null;
 		try {
-			conn = (HttpURLConnection)mUrl.openConnection();
-			conn.setRequestProperty("Authorization", "Basic " + base64.encode(user + ":" + passwd));
-			httpIn = new BufferedInputStream(conn.getInputStream(), 8192);
-
 			BufferedImage read = ImageIO.read(httpIn);
 			return read;
 		} finally {

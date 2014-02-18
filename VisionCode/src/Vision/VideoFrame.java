@@ -12,58 +12,54 @@ public class VideoFrame
 	private final long mTimeInMicroSeconds;
 	
 	private final int mCameraIndex;
-
-	private final double distance;
 	
-	private final List<Rect> blobs;
+	private final Rect blob;
 	
-	public VideoFrame(Mat pMat, long pTime, int pCameraIndex, double  pDistance, List<Rect> pBlobs) 
+	private final double calHeightInches;
+	
+	private final double calDistance;
+	
+	private final double calAngle;
+	
+	public VideoFrame(Mat pMat, long pTime, int pCameraIndex, Rect pBlob, double pCalHeightInches, double pCalDistance, double pCalAngle) 
 	{
 		mMat = pMat.clone();
 		mTimeInMicroSeconds = pTime;
 		mCameraIndex = pCameraIndex;
-		distance = pDistance;
-		blobs = pBlobs;
+		blob = pBlob;
+		calDistance = pCalDistance;
+		calHeightInches = pCalHeightInches;
+		calAngle = pCalAngle;
 	}
 	
-	public VideoFrame(Mat pMat, long pTime, List<Rect> pBlobs) 
+	public VideoFrame(Mat pMat, long pTime, Rect pBlob) 
 	{
-		this(pMat, pTime, 0, 0.0, pBlobs);
+		this(pMat, pTime, 0, pBlob, 0.0, 0.0, 0.0);
 	}
 	
-	public VideoFrame(Mat pMat, long pTime, int pCameraIndex, double  pDistance) 
+	public VideoFrame(Mat pMat, long pTime, int pCameraIndex) 
 	{
-		mMat = pMat.clone();
-		mTimeInMicroSeconds = pTime;
-		mCameraIndex = pCameraIndex;
-		distance = pDistance;
-		blobs = null;
+		this(pMat, pTime, pCameraIndex, null, 0.0, 0.0, 0.0);
 	}
 
 	public VideoFrame(Mat pMat, long pTime) 
 	{
-		this(pMat, pTime, 0, 0.0);
-		
+		this(pMat, pTime, 0, null, 0.0, 0.0, 0.0);
 	}
 	
 	public VideoFrame(Mat pMat)
 	{
-		this(pMat, 0, 0, 0.0);
+		this(pMat, 0, 0, null, 0.0, 0.0, 0.0);
 	}
 	
 	public VideoFrame()
 	{
-		this(new Mat(), 0, 0, 0.0);
+		this(new Mat(), 0, 0, null, 0.0, 0.0, 0.0);
 	}
 	
-	public VideoFrame(Mat pMat, double pDistance)
+	public VideoFrame(Mat pMat, long pTime, Rect pBlob, double pCalHeightInches, double pAngle, double pCalDistance)
 	{
-		this(pMat, 0, 0, pDistance);
-	}
-
-	public VideoFrame(Mat pMat, long pTime, double pDistance, List<Rect> pBlobs) 
-	{
-		this(pMat, pTime, 0, pDistance, pBlobs);
+		this(pMat, pTime, 0, pBlob, pCalHeightInches, pAngle, pCalDistance);
 	}
 
 	public final long getTimeInMicroSeconds()
@@ -80,14 +76,18 @@ public class VideoFrame
 	{
 		return mCameraIndex;
 	}
-
-	public double getDistance() 
+	
+	public Rect getBlobs() 
 	{
-		return distance;
+		return blob;
 	}
 
-	public List<Rect> getBlobs() 
+	@Override
+	public String toString() 
 	{
-		return blobs;
+		return "VideoFrame [mTimeInMicroSeconds=" + mTimeInMicroSeconds
+				+ ", calHeightInches=" + calHeightInches + ", calDistance="
+				+ calDistance + ", calAngle=" + calAngle + "]";
 	}
+	
 }

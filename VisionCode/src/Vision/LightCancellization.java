@@ -18,11 +18,11 @@ public class LightCancellization extends AbstractNotifier implements FrameListen
 		Imgproc.cvtColor(pInput, yuv, Imgproc.COLOR_BGR2YCrCb);
 		
 		//Zero Out the light Space, Y
-		AerialAssist.zeroOutChannel(yuv, yuv, 0);
+		ImageProcessing.zeroOutChannel(yuv, yuv, 0);
 		
 		//Convert Back to BGR Space
 		Imgproc.cvtColor(yuv, pInput, Imgproc.COLOR_YCrCb2BGR);
-		AerialAssist.displayImg(pInput, "No Light");
+		ImageProcessing.displayImg(pInput, "No Light");
 		
 		notifyListeners(new VideoFrame(pInput, System.currentTimeMillis()));
 		

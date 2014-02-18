@@ -12,17 +12,22 @@ public class DistanceDetector extends AbstractNotifier implements FrameListener
 		super();
 	}
 	
-	public void detectDistance(Mat pInput, List<Rect> pBlobs)
+	public void detectDistance(Mat pInput, Rect pRect)
 	{
-		double distance = AerialAssist.distance(pInput, pBlobs);
+		Calibration c = Calibration.getInstance();
 		
-		notifyListeners(new VideoFrame(pInput, System.currentTimeMillis(), distance, pBlobs));
+		double midHeight = (pInput.height()-((pRect.br().y + pRect.tl().y)/2));
+		double calHeightInches = midHeight * c.getInchPerPixel();
+		double angle = Math.atan(calHeightInches/c.getCalibrationX());
+		double calDistance = c.getCalibrationY()/Math.tan(angle);
+		
+		notifyListeners(new VideoFrame(pInput, System.currentTimeMillis(), pRect, calHeightInches, angle, calDistance));
 	}
 
 	@Override
 	public void newFrame(VideoFrame pVideoFrame)
 	{
-		
+		detectDistance(pVideoFrame.getMat(), pVideoFrame.getBlobs());
 	}
 	
 }

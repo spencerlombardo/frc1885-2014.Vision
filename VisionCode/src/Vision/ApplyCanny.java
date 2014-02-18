@@ -1,6 +1,9 @@
 package Vision;
 
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 
 public class ApplyCanny extends AbstractNotifier implements FrameListener
 {
@@ -27,10 +30,11 @@ public class ApplyCanny extends AbstractNotifier implements FrameListener
 	public void detectBlobs(Mat pInput)
 	{
 		Mat lines = new Mat();
-		AerialAssist.cannyAndHough(pInput, lines, mCannyLow, mCannyHigh, mRho, mTheta);
-		AerialAssist.displayImg(lines, "Lines");
+		Rect tmp = ImageProcessing.cannyAndHough(pInput, lines, mCannyLow, mCannyHigh, mRho, mTheta);
 		
-		notifyListeners(new VideoFrame(lines, System.currentTimeMillis()));
+		Core.rectangle(lines, tmp.tl(), tmp.br(), new Scalar(0,0,255));
+		
+		notifyListeners(new VideoFrame(lines, System.currentTimeMillis(), tmp));
 	}
 
 	@Override

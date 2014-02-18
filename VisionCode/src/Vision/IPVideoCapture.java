@@ -1,96 +1,103 @@
 package Vision;
 
-import java.io.IOException;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 public class IPVideoCapture extends AbstractNotifier
 {
-	private ImageNetworkConnection capture = null;
-	
+	private AxisCameraConnection capture = null;
+
 	private final int NUM_THREADS = 1;
-	
+
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(NUM_THREADS);
-	
-	private int mFPS;
-	
+
 	private ScheduledFuture<?> mCameraReadHandler = null;
-	
+
 	private FrameReader mFrameReader = new FrameReader();
-	
-	private final int mCameraIndex;
-	
-	public IPVideoCapture()
+
+	private String ipAddress;
+
+	private Calibration cal;
+
+	public IPVideoCapture(String pIp)
 	{
 		super();
-		mFPS = 20;
-		mCameraIndex= 0;
-		
+		ipAddress = pIp;
+		setupParameters();
+		cal = Calibration.getInstance();
+	}
+	public AxisCameraConnection getConnection()
+	{
+		return capture;
+	}
+	private void setupParameters() 
+	{
 		try 
 		{
-			setupParameters();
+			capture = new AxisCameraConnection(ipAddress);
+			this.capture.connect();
+
+			(new Thread(this.capture)).start();
 		} 
-		catch (IOException e) 
+		catch (Exception e) 
 		{
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}	
+		}
+		mCameraReadHandler = scheduler.scheduleAtFixedRate(mFrameReader, 1000, 33, TimeUnit.MILLISECONDS);
 	}
-	
-	private void setupParameters() throws IOException
+
+	public static Mat toMatrix(BufferedImage img)
 	{
-		capture = new ImageNetworkConnection("http://10.18.85.21/axis-cgi/jpg/image.cgi");
-		
-		mCameraReadHandler = scheduler.scheduleAtFixedRate(mFrameReader, 1000, (int)((1.0/mFPS)*1000), TimeUnit.MILLISECONDS);	
+		byte[] pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+		Mat tmp = new Mat(img.getHeight(), img.getWidth(), CvType.CV_8UC3);
+		tmp.put(0, 0, pixels);
+		return tmp;
 	}
-	
-	public ScheduledFuture<?> getCameraReadHandler()
-	{
-		return mCameraReadHandler;
-	}
-	
+
 	private class FrameReader implements Runnable 
 	{
-		/**
-		 * @brief the input frame from the specified source
-		 */
 		private Mat mReceivedFrame = new Mat();
-    	
-		/**
-		 * @brief the last time the function was called...
-		 */
-		private long mLastTime = 0;
-       	
 		/**
 		 * @brief run function for the threading...
 		 */
-    	public void run() 
-    	{ 	    	   	
-    	   	// read the desired frame...
-    		try 
-    		{
-				mReceivedFrame = AerialAssist.toMatrix(capture.grabImage());
+		public void run() 
+		{
+			try
+			{
+				mReceivedFrame = toMatrix(capture.grabImage());
+				
+				if(!cal.isCalibrated())
+				{
+					cal.doCalibration(mReceivedFrame);
+					System.out.println(cal.toString());
+				}
+				else
+				{
+					ImageProcessing.displayImg(mReceivedFrame, "OriginalImage");
+
+					// notify all the listeners
+					notifyListeners(new VideoFrame(mReceivedFrame, System.currentTimeMillis()));
+				}
 			} 
-    		catch (IOException e) 
-    		{
+			catch (Exception e) 
+			{
 				e.printStackTrace();
 			}
-    		
-    		// flip the frame 
-//    		Core.flip(mReceivedFrame, mReceivedFrame, 1);
-			
-    		AerialAssist.displayImg(mReceivedFrame, "Original");
-    		
-    		// notify all the listeners
-    		notifyListeners(new VideoFrame(mReceivedFrame, System.currentTimeMillis(), mCameraIndex, 0.0));
-    		
-    		// simple timing
-		    long tTimeNow = System.nanoTime();
-    	   	mLastTime = tTimeNow;
-    	}
+		}	
 	}
-	
+
+	public ScheduledFuture<?> getCameraReadHandler() 
+	{
+		return mCameraReadHandler;
+	}
 }

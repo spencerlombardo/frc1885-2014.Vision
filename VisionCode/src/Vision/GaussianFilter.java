@@ -12,7 +12,7 @@ public class GaussianFilter extends AbstractNotifier implements FrameListener
 	public void applyGaussian(Mat pInput)
 	{
 		//Apply Gaussian Filter to Image
-		AerialAssist.lowFrequencyFilter(pInput, pInput);
+		ImageProcessing.lowFrequencyFilter(pInput, pInput);
 		
 		notifyListeners(new VideoFrame(pInput, System.currentTimeMillis()));
 	}
