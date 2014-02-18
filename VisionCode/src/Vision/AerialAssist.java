@@ -208,7 +208,7 @@ public class AerialAssist
 		}
 		return tmp3;
 	}
-	private static Mat thresholdColor(final Mat aChannel, final int aLow, final int aHigh)
+	public static Mat thresholdColor(final Mat aChannel, final int aLow, final int aHigh)
 	{
 		Mat tTemp1 = new Mat();
 		Mat tTemp2 = new Mat();
